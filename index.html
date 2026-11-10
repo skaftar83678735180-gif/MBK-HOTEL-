@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBK HOTEL</title>
+    <style>
+        :root {
+            --gold: #e9b94d;
+            --dark: #090a0e;
+            --card: rgba(23, 25, 32, 0.85);
+            --white: #fff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--dark);
+            color: var(--white);
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(233,185,77,0.1) 0%, rgba(9,10,14,0.95) 80%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .top-bar {
+            background: rgba(17,17,17,0.95);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { font-size: 20px; font-weight: bold; color: var(--gold); }
+        .admin-btn { background: var(--gold); border: none; padding: 6px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .container { max-width: 800px; margin: auto; padding: 15px; }
+        h2 { color: var(--gold); border-bottom: 1px solid rgba(233,185,77,0.3); padding-bottom: 5px; margin-top: 25px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .item-card {
+            background: var(--card);
+            border: 1px solid rgba(233,185,77,0.2);
+            border-radius: 10px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-name { font-size: 16px; font-weight: bold; }
+        .item-price { color: var(--gold); font-size: 16px; font-weight: bold; }
+        .controls { display: flex; align-items: center; gap: 10px; }
+        button.action-btn { background: var(--gold); border: none; padding: 6px 12px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        .cart-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111;
+            border-top: 2px solid var(--gold);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #1a1c23;
+            border: 2px solid var(--gold);
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; background: #090a0e; border: 1px solid var(--gold); color: #fff; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="logo">👑 MBK HOTEL</div>
+        <button class="admin-btn" onclick="openAdminLogin()">Admin</button>
+    </div>
+
+    <div class="container" id="menu-container">
+        <!-- Menu dynamically loaded here -->
+    </div>
+
+    <div style="height: 80px;"></div>
+
+    <div class="cart-bar">
+        <div>Cart: <span id="cart-count">0</span> items</div>
+        <button class="action-btn" onclick="openCart()">View Order</button>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="admin-modal">
+        <div class="modal-content">
+            <h3>Admin Dashboard (PIN: 2222)</h3>
+            <div id="admin-login-sec">
+                <input type="password" id="admin-pin" placeholder="Enter PIN">
+                <button class="action-btn" onclick="verifyAdmin()">Login</button>
+            </div>
+            <div id="admin-panel-sec" style="display:none;">
+                <h4>Live Customer Orders</h4>
+                <div id="live-orders-list"></div>
+                <h4>Add New Item</h4>
+                <select id="new-category">
+                    <option value="ALFAHAM">ALFAHAM</option>
+                    <option value="BEEF SPECIAL">BEEF SPECIAL</option>
+                    <option value="CHICKEN DISHES">CHICKEN DISHES</option>
+                    <option value="VEGETARIAN">VEGETARIAN</option>
+                    <option value="INDIAN BREAD">INDIAN BREAD</option>
+                    <option value="CHICKEN FRIED RICE">CHICKEN FRIED RICE</option>
+                    <option value="BIRYANI SPECIAL">BIRYANI SPECIAL</option>
+                </select>
+                <input type="text" id="new-name" placeholder="Item Name">
+                <input type="number" id="new-price" placeholder="Price (₹)">
+                <button class="action-btn" onclick="addNewItem()">Add Item</button>
+                <br><br>
+                <button style="background:red; color:#fff;" class="action-btn" onclick="closeAdmin()">Close Panel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cart-modal">
+        <div class="modal-content">
+            <h3>Your Order</h3>
+            <div id="cart-items-list"></div>
+            <input type="text" id="cust-name" placeholder="Your Name">
+            <input type="text" id="cust-phone" placeholder="Phone Number">
+            <input type="text" id="cust-address" placeholder="Room/Table No or Address">
+            <button class="action-btn" onclick="placeOrder()">Place Order</button>
+            <button class="action-btn" style="background:#555; margin-top:10px;" onclick="closeCart()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let defaultMenu = {
+            "ALFAHAM": [
+                {name: "ALFAHAM NORMAL", price: 120},
+                {name: "ALFAHAM PERI PERI", price: 130},
+                {name: "ALFAHAM PEPPER", price: 130},
+                {name: "ALFAHAM HONEY", price: 140},
+                {name: "ALFAHAM AFGHANI", price: 140},
+                {name: "ALFAHAM KANDHARI", price: 140},
+                {name: "NORMAL ALFAHAM MANDHI (Q)", price: 160},
+                {name: "PERI PERI ALFAHAM MANDHI (Q)", price: 170},
+                {name: "PEPPER ALFAHAM MANDHI (Q)", price: 170},
+                {name: "AFGHANI ALFAHAM MANDHI (Q)", price: 200},
+                {name: "HONEY ALFAHAM MANDHI (Q)", price: 180}
+            ],
+            "BEEF SPECIAL": [
+                {name: "BEEF FRY", price: 120},
+                {name: "BEEF CHILLI", price: 130},
+                {name: "BEEF MASALA", price: 160},
+                {name: "BEEF PEPPER", price: 160},
+                {name: "BEEF ROAST", price: 160},
+                {name: "BEEF KONDATTAM", price: 170},
+                {name: "BEEF CHILLI GRAVY", price: 170},
+                {name: "BEEF MANJURI", price: 170}
+            ],
+            "CHICKEN DISHES": [
+                {name: "CHICKEN 65", price: 120},
+                {name: "CHICKEN CHILLI", price: 120},
+                {name: "CHICKEN MASALA", price: 150},
+                {name: "CHICKEN KONDATTAM", price: 150},
+                {name: "CHICKEN PEPPER", price: 160},
+                {name: "CHICKEN MANCHURIAN", price: 160},
+                {name: "CHICKEN GARLIC", price: 160},
+                {name: "CHICKEN GINGER", price: 160},
+                {name: "CHICKEN ROAST", price: 160},
+                {name: "CHICKEN CHUKKA", price: 160},
+                {name: "CHICKEN KADAI", price: 170},
+                {name: "CHICKEN KRUMA", price: 170},
+                {name: "CHICKEN BUTTER", price: 170},
+                {name: "CHICKEN TIGER", price: 170},
+                {name: "CHICKEN DRAGON", price: 190}
+            ],
+            "VEGETARIAN": [
+                {name: "MIX VEGE MASALA", price: 80},
+                {name: "GREEN PEES KURUMA", price: 80},
+                {name: "MIX VEGE KURUMA", price: 100},
+                {name: "MIX VEGE KADAI", price: 120},
+                {name: "GOPI MANJURI", price: 120},
+                {name: "GOPI CHILLI", price: 120}
+            ],
+            "INDIAN BREAD": [
+                {name: "CHAPPATHI", price: 12},
+                {name: "PAROTTA", price: 13},
+                {name: "NOOL POROTTA", price: 20},
+                {name: "ATTA POROTTA", price: 20},
+                {name: "TANDOORI ROTI", price: 20},
+                {name: "BUTTER ROTI", price: 25},
+                {name: "PLAIN NAAN", price: 20},
+                {name: "BUTTER NAAN", price: 30}
+            ],
+            "CHICKEN FRIED RICE": [
+                {name: "VEG. FRIED RICE", price: 120},
+                {name: "EGG FRIED RICE", price: 130},
+                {name: "CHICKEN FRIED RICE", price: 140},
+                {name: "SCHEZWAN FRIED RICE", price: 160},
+                {name: "MIXED FRIED RICE", price: 170}
+            ],
+            "BIRYANI SPECIAL": [
+                {name: "CHICKEN BIRYANI", price: 120},
+                {name: "KUTTAN BIRYANI", price: 130}
+            ]
+        };
+
+        let menuData = JSON.parse(localStorage.getItem('mbk_menu')) || defaultMenu;
+        let cart = {};
+        let orders = JSON.parse(localStorage.getItem('mbk_orders')) || [];
+
+        function renderMenu() {
+            let container = document.getElementById('menu-container');
+            container.innerHTML = '';
+            for (let category in menuData) {
+                let html = `<h2>${category}</h2><div class="menu-grid">`;
+                menuData[category].forEach((item, idx) => {
+                    let qty = cart[item.name]?.qty || 0;
+                    html += `
+                        <div class="item-card">
+                            <div>
+                                <div class="item-name">${item.name}</div>
+                                <div class="item-price">₹${item.price}</div>
+                            </div>
+                            <div class="controls">
+                                ${qty === 0 ? 
+                                    `<button class="action-btn" onclick="addToCart('${item.name}', ${item.price})">Add</button>` :
+                                    `<button class="action-btn" onclick="changeQty('${item.name}', -1)">-</button>
+                                     <span>${qty}</span>
+                                     <button class="action-btn" onclick="changeQty('${item.name}', 1)">+</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                container.innerHTML += html;
+            }
+            let totalCount = Object.values(cart).reduce((sum, i) => sum + i.qty, 0);
+            document.getElementById('cart-count').innerText = totalCount;
+        }
+
+        function addToCart(name, price) {
+            cart[name] = {price: price, qty: 1};
+            renderMenu();
+        }
+
+        function changeQty(name, change) {
+            cart[name].qty += change;
+            if (cart[name].qty <= 0) delete cart[name];
+            renderMenu();
+        }
+
+        function openCart() {
+            let list = document.getElementById('cart-items-list');
+            list.innerHTML = '';
+            let total = 0;
+            for (let name in cart) {
+                let itemTotal = cart[name].price * cart[name].qty;
+                total += itemTotal;
+                list.innerHTML += `<div>${name} x ${cart[name].qty} = ₹${itemTotal}</div>`;
+            }
+            list.innerHTML += `<h4>Total: ₹${total}</h4>`;
+            document.getElementById('cart-modal').style.display = 'flex';
+        }
+
+        function closeCart() {
+            document.getElementById('cart-modal').style.display = 'none';
+        }
+
+        function placeOrder() {
+            let name = document.getElementById('cust-name').value;
+            let phone = document.getElementById('cust-phone').value;
+            let address = document.getElementById('cust-address').value;
+            if(!name || !phone) { alert('Please enter name and phone'); return; }
+
+            let order = {
+                id: Date.now(),
+                name: name,
+                phone: phone,
+                address: address,
+                items: {...cart},
+                status: 'Pending'
+            };
+            orders.unshift(order);
+            localStorage.setItem('mbk_orders', JSON.stringify(orders));
+            alert('Order placed successfully!');
+            cart = {};
+            closeCart();
+            renderMenu();
+        }
+
+        function openAdminLogin() {
+            document.getElementById('admin-modal').style.display = 'flex';
+        }
+
+        function verifyAdmin() {
+            let pin = document.getElementById('admin-pin').value;
+            if(pin === '2222') {
+                document.getElementById('admin-login-sec').style.display = 'none';
+                document.getElementById('admin-panel-sec').style.display = 'block';
+                renderAdminOrders();
+            } else {
+                alert('Wrong PIN!');
+            }
+        }
+
+        function closeAdmin() {
+            document.getElementById('admin-modal').style.display = 'none';
+            document.getElementById('admin-login-sec').style.display = 'block';
+            document.getElementById('admin-panel-sec').style.display = 'none';
+        }
+
+        function renderAdminOrders() {
+            let list = document.getElementById('live-orders-list');
+            orders = JSON.parse(localStorage.getItem('mbk_orders')) || [];
+            if(orders.length === 0) { list.innerHTML = '<p>No orders yet.</p>'; return; }
+            list.innerHTML = '';
+            orders.forEach(o => {
+                let itemsStr = '';
+                for(let k in o.items) { itemsStr += `${k} (${o.items[k].qty}), `; }
+                list.innerHTML += `
+                    <div style="background:#090a0e; padding:10px; margin:5px 0; border-radius:5px;">
+                        <b>${o.name}</b> (${o.phone})<br>
+                        Location: ${o.address}<br>
+                        Items: ${itemsStr}<br>
+                        Status: <span style="color:${o.status=='Accepted'?'green':o.status=='Rejected'?'red':'orange'}">${o.status}</span><br>
+                        ${o.status == 'Pending' ? `
+                            <button class="action-btn" onclick="updateOrderStatus(${o.id}, 'Accepted')">Accept</button>
+                            <button class="action-btn" style="background:red;" onclick="updateOrderStatus(${o.id}, 'Rejected')">Reject</button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        function updateOrderStatus(id, status) {
+            orders = orders.map(o => o.id === id ? {...o, status: status} : o);
+            localStorage.setItem('mbk_orders', JSON.stringify(orders));
+            renderAdminOrders();
+        }
+
+        function addNewItem() {
+            let cat = document.getElementById('new-category').value;
+            let name = document.getElementById('new-name').value;
+            let price = Number(document.getElementById('new-price').value);
+            if(!name || !price) { alert('Fill all fields'); return; }
+            menuData[cat].push({name: name, price: price});
+            localStorage.setItem('mbk_menu', JSON.stringify(menuData));
+            alert('Item added successfully!');
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-price').value = '';
+            renderMenu();
+        }
+
+        renderMenu();
+        setInterval(() => {
+            orders = JSON.parse(localStorage.getItem('mbk_orders')) || [];
+            if(document.getElementById('admin-panel-sec').style.display === 'block') {
+                renderAdminOrders();
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
